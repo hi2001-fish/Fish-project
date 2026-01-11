@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+
+#This piece of code: takes photo when 'y' button pressed; takes temp readings every 10 seconds and stores them in .csv file w time/date; prints when button pressed
+import serial
+import time
+import pygame
+import csv
+from datetime import datetime
+from picamera2 import Picamera2
+from fish.setup import setup_picture_folder
+
+
+PHOTO_PATH = setup_picture_folder()
+picam2 = Picamera2()
+last_temp_read = None
+
+def button_0():
+    print('button 0 pressed')
+
+def button_1():
+    print('button 1 pressed')
+
+def button_2():
+    print('button 2 pressed')
+
+def default_button():
+    print('default')
+
+def take_photo(photo_folder: str = PHOTO_PATH):
+    current_timestamp = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
+    image_file = str(photo_folder / f"{current_timestamp}.jpg")
+    picam2.start_and_capture_file(image_file)
+
+BUTTON_SWITCHER = {
+    0: take_photo,
+    1: button_1,
+    2: button_2
+
+}
+
+def main():
+    # serial channel
+    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
+    ser.reset_input_buffer()
+
+    # init pygame controller
+    pygame.init()
+    pygame.joystick.init()
+
+    joystick = None
+
+    # look for controller already plugged in (quicker than polling connection)
+    if pygame.joystick.get_count() > 0:
+        joystick = pygame.joystick.Joystick(0)
+        joystick.init()
+        print(f"Joystick found: {joystick.get_name()}")
+
+    while True:
+        # process pygame events for hot plugging
+        for event in pygame.event.get():
+            if event.type == pygame.JOYDEVICEADDED:
+                joystick = pygame.joystick.Joystick(event.device_index)
+                joystick.init()
+                print("Joystick connected")
+
+            elif event.type == pygame.JOYDEVICEREMOVED:
+                print("Joystick disconnected")
+                joystick = None
+
+            buttons_held = set()
+
+            # In your main loop:
+            if joystick is not None:
+                for i in range(0, 14):
+                    button_state = joystick.get_button(i)
+                    button_name = f'button_{i}'
+                    was_button_held = button_name in buttons_held
+
+                    if button_state and not was_button_held:
+                        buttons_held.add(button_name)
+                        BUTTON_SWITCHER.get(i, default_button)()
+                    elif not button_state and was_button_held:
+                        buttons_held.remove(button_name)
+
+
+            # button_state = joystick.get_button(0)
+            # if button_state and not is_button_held:
+            #     is_button_held = True
+            #     print("Button held, turning on")
+            #     ser.write(b"ON\n")
+
+            # elif not button_state and is_button_held:
+            #     is_button_held = False
+            #     print("Button released, turning off")
+            #     ser.write(b"OFF\n")
+
+       
+        if ser.in_waiting > 0:
+            last_temp_read = ser.readline().decode('utf-8').rstrip()
+            f = open("tempread.csv","a")
+            f.write(datetime.now().strftime('%d/%m/%Y, %H:%M:%S')+ " " + last_temp_read + '\n')
+            print(last_temp_read)
+
+        time.sleep(0.005)
+
+if __name__ == '__main__':
+    main()
