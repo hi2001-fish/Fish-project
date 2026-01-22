@@ -14,17 +14,14 @@ PHOTO_PATH = setup_picture_folder()
 picam2 = Picamera2()
 last_temp_read = None
 
-def button_0(ser):
-    print('Slow speed mode')
-    ser.write(b"SLOW\n")
+def button_0():
+    print('button 0 pressed')
 
-def button_1(ser):
-    print('Medium speed mode')
-    ser.write(b"MEDIUM\n")
+def button_1():
+    print('button 1 pressed')
 
-def button_2(ser):
-    print('Fast speed mode')
-    ser.write(b"FAST\n")
+def button_2():
+    print('button 2 pressed')
 
 def button_3():
     print('button 3 pressed')
@@ -35,20 +32,17 @@ def button_4():
 def button_5():
     print('button 5 pressed')
     
-def button_6(ser):
-    print('Fish turning left')
-    ser.write(b"LEFT\n")
+def button_6():
+    print('button 6 pressed')
 
-def button_7(ser):
-    print('Fish turning right')
-    ser.write(b"RIGHT\n")
+def button_7():
+    print('button 7 pressed')
 
 def button_8():
     print('button 8 pressed')
 
-def button_9(ser):
-    print('Servo centered')
-    ser.write(b"CENTER\n")
+def button_9():
+    print('button 9 pressed')
 
 def button_10():
     print('button 10 pressed')
@@ -119,11 +113,7 @@ def main():
 
                     if button_state and not was_button_held:
                         buttons_held.add(button_name)
-                        func = BUTTON_SWITCHER.get(i, default_button)
-                        if func.__code__.co_argcount == 1:
-                            func(ser)
-                        else:
-                            func()
+                        BUTTON_SWITCHER.get(i, default_button)()
                     elif not button_state and was_button_held:
                         buttons_held.remove(button_name)
 
