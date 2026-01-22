@@ -14,6 +14,29 @@ PHOTO_PATH = setup_picture_folder()
 picam2 = Picamera2()
 last_temp_read = None
 
+def send_command(cmd: str):
+    ser.write(f"{cmd}\n".encode('utf-8'))
+    print(f"Sent: {cmd}")
+
+def servo_left():
+    send_command("LEFT")
+
+def servo_right():
+    send_command("RIGHT")
+
+def servo_center():
+    send_command("CENTER")
+
+def servo_slow():
+    send_command("SLOW")
+
+def servo_medium():
+    send_command("MEDIUM")
+
+def servo_fast():
+    send_command("FAST")
+
+
 def button_0():
     print('button 0 pressed')
 
@@ -59,16 +82,16 @@ def take_photo(photo_folder: str = PHOTO_PATH):
     picam2.start_and_capture_file(image_file)
 
 BUTTON_SWITCHER = {
-    0: button_0,
-    1: button_1,
-    2: button_2,
+    0: servo_slow,
+    1: servo_medium,
+    2: servo_fast,
     3: button_3,
     4: button_4,
     5: button_5,
-    6: button_6,
-    7: button_7,
+    6: servo_left,
+    7: servo_right,
     8: take_photo,
-    9: button_9,
+    9: servo_center,
     10: button_10,
     11: button_11
 }
