@@ -1,50 +1,10 @@
-Jan 22 18:50:13 raspberrypi systemd[1]: fish-controller.service: Failed with result 'exit-code'.
-Jan 22 18:50:15 raspberrypi systemd[1]: fish-controller.service: Scheduled restart job, restart counter is at 44.
-Jan 22 18:50:15 raspberrypi systemd[1]: Stopped fish-controller.service - Fish Robot Controller (uv).
-Jan 22 18:50:15 raspberrypi systemd[1]: Started fish-controller.service - Fish Robot Controller (uv).
-Jan 22 18:50:15 raspberrypi (bin)[8664]: fish-controller.service: Failed to locate executable /usr/bin: Is a directory
-Jan 22 18:50:15 raspberrypi (bin)[8664]: fish-controller.service: Failed at step EXEC spawning /usr/bin: Is a directory
-Jan 22 18:50:15 raspberrypi systemd[1]: fish-controller.service: Main process exited, code=exited, status=203/EXEC
-Jan 22 18:50:15 raspberrypi systemd[1]: fish-controller.service: Failed with result 'exit-code'.
-Jan 22 18:50:18 raspberrypi systemd[1]: fish-controller.service: Scheduled restart job, restart counter is at 45.
-Jan 22 18:50:18 raspberrypi systemd[1]: Stopped fish-controller.service - Fish Robot Controller (uv).
-Jan 22 18:50:18 raspberrypi (bin)[8669]: fish-controller.service: Failed to locate executable /usr/bin: Is a directory
-Jan 22 18:50:18 raspberrypi (bin)[8669]: fish-controller.service: Failed at step EXEC spawning /usr/bin: Is a directory
-Jan 22 18:50:18 raspberrypi systemd[1]: Started fish-controller.service - Fish Robot Controller (uv).
-Jan 22 18:50:18 raspberrypi systemd[1]: fish-controller.service: Main process exited, code=exited, status=203/EXEC
-Jan 22 18:50:18 raspberrypi systemd[1]: fish-controller.service: Failed with result 'exit-code'.
-Jan 22 18:50:20 raspberrypi systemd[1]: fish-controller.service: Scheduled restart job, restart counter is at 46.
-Jan 22 18:50:20 raspberrypi systemd[1]: Stopped fish-controller.service - Fish Robot Controller (uv).
-Jan 22 18:50:20 raspberrypi (bin)[8672]: fish-controller.service: Failed to locate executable /usr/bin: Is a directory
-Jan 22 18:50:20 raspberrypi (bin)[8672]: fish-controller.service: Failed at step EXEC spawning /usr/bin: Is a directory
-Jan 22 18:50:20 raspberrypi systemd[1]: Started fish-controller.service - Fish Robot Controller (uv).
-Jan 22 18:50:20 raspberrypi systemd[1]: fish-controller.service: Main process exited, code=exited, status=203/EXEC
-Jan 22 18:50:20 raspberrypi systemd[1]: fish-controller.service: Failed with result 'exit-code'.
-Jan 22 18:50:22 raspberrypi systemd[1]: fish-controller.service: Scheduled restart job, restart counter is at 47.
-Jan 22 18:50:22 raspberrypi systemd[1]: Stopped fish-controller.service - Fish Robot Controller (uv).
-Jan 22 18:50:22 raspberrypi (bin)[8673]: fish-controller.service: Failed to locate executable /usr/bin: Is a directory
-Jan 22 18:50:22 raspberrypi (bin)[8673]: fish-controller.service: Failed at step EXEC spawning /usr/bin: Is a directory
-Jan 22 18:50:22 raspberrypi systemd[1]: Started fish-controller.service - Fish Robot Controller (uv).
-Jan 22 18:50:22 raspberrypi systemd[1]: fish-controller.service: Main process exited, code=exited, status=203/EXEC
-Jan 22 18:50:22 raspberrypi systemd[1]: fish-controller.service: Failed with result 'exit-code'.
-Jan 22 18:50:24 raspberrypi systemd[1]: fish-controller.service: Scheduled restart job, restart counter is at 48.
-Jan 22 18:50:24 raspberrypi systemd[1]: Stopped fish-controller.service - Fish Robot Controller (uv).
-Jan 22 18:50:24 raspberrypi (bin)[8674]: fish-controller.service: Failed to locate executable /usr/bin: Is a directory
-Jan 22 18:50:24 raspberrypi (bin)[8674]: fish-controller.service: Failed at step EXEC spawning /usr/bin: Is a directory
-Jan 22 18:50:24 raspberrypi systemd[1]: Started fish-controller.service - Fish Robot Controller (uv).
-Jan 22 18:50:24 raspberrypi systemd[1]: fish-controller.service: Main process exited, code=exited, status=203/EXEC
-Jan 22 18:50:24 raspberrypi systemd[1]: fish-controller.service: Failed with result 'exit-code'.
-Jan 22 18:50:27 raspberrypi systemd[1]: fish-controller.service: Scheduled restart job, restart counter is at 49.
-Jan 22 18:50:27 raspberrypi systemd[1]: Stopped fish-controller.service - Fish Robot Controller (uv).
-Jan 22 18:50:27 raspberrypi (bin)[8675]: fish-controller.service: Failed to locate executable /usr/bin: Is a directory
-Jan 22 18:50:27 raspberrypi (bin)[8675]: fish-controller.service: Failed at step EXEC spawning /usr/bin: Is a directory
-Jan 22 18:50:27 raspberrypi systemd[1]: Started fish-controller.service - Fish Robot Controller (uv).
-Jan 22 18:50:27 raspberrypi systemd[1]: fish-controller.service: Main process exited, code=exited, status=203/EXEC
-Jan 22 18:50:27 raspberrypi systemd[1]: fish-controller.service: Failed with result 'exit-code'.
-Jan 22 18:50:29 raspberrypi systemd[1]: fish-controller.service: Scheduled restart job, restart counter is at 50.
-Jan 22 18:50:29 raspberrypi systemd[1]: Stopped fish-controller.service - Fish Robot Controller (uv).
-Jan 22 18:50:29 raspberrypi (bin)[8676]: fish-controller.service: Failed to locate executable /usr/bin: Is a directory
-Jan 22 18:50:29 raspberrypi (bin)[8676]: fish-controller.service: Failed at step EXEC spawning /usr/bin: Is a directory
-Jan 22 18:50:29 raspberrypi systemd[1]: Started fish-controller.service - Fish Robot Controller (uv).
-Jan 22 18:50:29 raspberrypi systemd[1]: fish-controller.service: Main process exited, code=exited, status=203/EXEC
-Jan 22 18:50:29 raspberrypi systemd[1]: fish-controller.service: Failed with result 'exit-code'.
+an 22 18:59:55 raspberrypi systemd[1]: Stopped fish-controller.service - Fish Robot Controller (uv).
+Jan 22 18:59:55 raspberrypi systemd[1]: fish-controller.service: Consumed 3.573s CPU time.
+Jan 22 19:00:15 raspberrypi systemd[1]: Started fish-controller.service - Fish Robot Controller (uv).
+Jan 22 19:00:15 raspberrypi uv[9048]: <frozen importlib._bootstrap>:241: RuntimeWarning: Your system is neon capable but pygame was not built with support for it. The performance of some of your blits could be adversely affected. Consider enabling compile time detection with environment variables like PYGAME_DETECT_AVX2=1 if you are compiling without cross compilation.
+Jan 22 19:00:16 raspberrypi uv[9048]: [1:58:59.784314625] [9048]  INFO Camera camera_manager.cpp:330 libcamera v0.5.2+99-bfd68f78
+Jan 22 19:00:16 raspberrypi uv[9048]: [1:58:59.810740703] [9051]  INFO IPAProxy ipa_proxy.cpp:180 Using tuning file /usr/share/libcamera/ipa/rpi/vc4/imx219.json
+Jan 22 19:00:16 raspberrypi uv[9048]: [1:58:59.818220390] [9051]  INFO Camera camera_manager.cpp:220 Adding camera '/base/soc/i2c0mux/i2c@1/imx219@10' for pipeline handler rpi/vc4
+Jan 22 19:00:16 raspberrypi uv[9048]: [1:58:59.818285742] [9051]  INFO RPI vc4.cpp:440 Registered camera /base/soc/i2c0mux/i2c@1/imx219@10 to Unicam device /dev/media1 and ISP device /dev/media2
+Jan 22 19:00:16 raspberrypi uv[9048]: [1:58:59.818328093] [9051]  INFO RPI pipeline_base.cpp:1107 Using configuration file '/usr/share/libcamera/pipeline/rpi/vc4/rpi_apps.yaml'
+Jan 22 19:00:16 raspberrypi uv[9048]: error: XDG_RUNTIME_DIR is invalid or not set in the environment.
