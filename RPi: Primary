@@ -59,7 +59,7 @@ def take_photo(photo_folder: str = PHOTO_PATH):
     picam2.start_and_capture_file(image_file)
 
 BUTTON_SWITCHER = {
-    0: take_photo,
+    0: button_0,
     1: button_1,
     2: button_2,
     3: button_3,
@@ -67,7 +67,7 @@ BUTTON_SWITCHER = {
     5: button_5,
     6: button_6,
     7: button_7,
-    8: button_8,
+    8: take_photo,
     9: button_9,
     10: button_10,
     11: button_11
