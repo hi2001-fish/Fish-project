@@ -14,6 +14,8 @@ PHOTO_PATH = setup_picture_folder()
 picam2 = Picamera2()
 last_temp_read = None
 
+ser = None
+
 def send_command(cmd: str):
     ser.write(f"{cmd}\n".encode('utf-8'))
     print(f"Sent: {cmd}")
@@ -35,7 +37,6 @@ def servo_medium():
 
 def servo_fast():
     send_command("FAST")
-
 
 def button_0():
     print('button 0 pressed')
@@ -100,6 +101,9 @@ def main():
     # serial channel
     ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
     ser.reset_input_buffer()
+
+    global ser
+    ser = serial.Serial('/dev/ttyACMO', 9600, timeout=1)
 
     # init pygame controller
     pygame.init()
