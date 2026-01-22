@@ -98,12 +98,12 @@ BUTTON_SWITCHER = {
 }
 
 def main():
+    global ser
+
     # serial channel
     ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
     ser.reset_input_buffer()
 
-    global ser
-    ser = serial.Serial('/dev/ttyACMO', 9600, timeout=1)
 
     # init pygame controller
     pygame.init()
@@ -111,11 +111,14 @@ def main():
 
     joystick = None
 
+    buttons_held = set()
+
     # look for controller already plugged in (quicker than polling connection)
     if pygame.joystick.get_count() > 0:
         joystick = pygame.joystick.Joystick(0)
         joystick.init()
         print(f"Joystick found: {joystick.get_name()}")
+
 
     while True:
         # process pygame events for hot plugging
@@ -129,7 +132,7 @@ def main():
                 print("Joystick disconnected")
                 joystick = None
 
-            buttons_held = set()
+            
 
             # In your main loop:
             if joystick is not None:
