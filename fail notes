@@ -1,0 +1,50 @@
+Jan 22 18:50:13 raspberrypi systemd[1]: fish-controller.service: Failed with result 'exit-code'.
+Jan 22 18:50:15 raspberrypi systemd[1]: fish-controller.service: Scheduled restart job, restart counter is at 44.
+Jan 22 18:50:15 raspberrypi systemd[1]: Stopped fish-controller.service - Fish Robot Controller (uv).
+Jan 22 18:50:15 raspberrypi systemd[1]: Started fish-controller.service - Fish Robot Controller (uv).
+Jan 22 18:50:15 raspberrypi (bin)[8664]: fish-controller.service: Failed to locate executable /usr/bin: Is a directory
+Jan 22 18:50:15 raspberrypi (bin)[8664]: fish-controller.service: Failed at step EXEC spawning /usr/bin: Is a directory
+Jan 22 18:50:15 raspberrypi systemd[1]: fish-controller.service: Main process exited, code=exited, status=203/EXEC
+Jan 22 18:50:15 raspberrypi systemd[1]: fish-controller.service: Failed with result 'exit-code'.
+Jan 22 18:50:18 raspberrypi systemd[1]: fish-controller.service: Scheduled restart job, restart counter is at 45.
+Jan 22 18:50:18 raspberrypi systemd[1]: Stopped fish-controller.service - Fish Robot Controller (uv).
+Jan 22 18:50:18 raspberrypi (bin)[8669]: fish-controller.service: Failed to locate executable /usr/bin: Is a directory
+Jan 22 18:50:18 raspberrypi (bin)[8669]: fish-controller.service: Failed at step EXEC spawning /usr/bin: Is a directory
+Jan 22 18:50:18 raspberrypi systemd[1]: Started fish-controller.service - Fish Robot Controller (uv).
+Jan 22 18:50:18 raspberrypi systemd[1]: fish-controller.service: Main process exited, code=exited, status=203/EXEC
+Jan 22 18:50:18 raspberrypi systemd[1]: fish-controller.service: Failed with result 'exit-code'.
+Jan 22 18:50:20 raspberrypi systemd[1]: fish-controller.service: Scheduled restart job, restart counter is at 46.
+Jan 22 18:50:20 raspberrypi systemd[1]: Stopped fish-controller.service - Fish Robot Controller (uv).
+Jan 22 18:50:20 raspberrypi (bin)[8672]: fish-controller.service: Failed to locate executable /usr/bin: Is a directory
+Jan 22 18:50:20 raspberrypi (bin)[8672]: fish-controller.service: Failed at step EXEC spawning /usr/bin: Is a directory
+Jan 22 18:50:20 raspberrypi systemd[1]: Started fish-controller.service - Fish Robot Controller (uv).
+Jan 22 18:50:20 raspberrypi systemd[1]: fish-controller.service: Main process exited, code=exited, status=203/EXEC
+Jan 22 18:50:20 raspberrypi systemd[1]: fish-controller.service: Failed with result 'exit-code'.
+Jan 22 18:50:22 raspberrypi systemd[1]: fish-controller.service: Scheduled restart job, restart counter is at 47.
+Jan 22 18:50:22 raspberrypi systemd[1]: Stopped fish-controller.service - Fish Robot Controller (uv).
+Jan 22 18:50:22 raspberrypi (bin)[8673]: fish-controller.service: Failed to locate executable /usr/bin: Is a directory
+Jan 22 18:50:22 raspberrypi (bin)[8673]: fish-controller.service: Failed at step EXEC spawning /usr/bin: Is a directory
+Jan 22 18:50:22 raspberrypi systemd[1]: Started fish-controller.service - Fish Robot Controller (uv).
+Jan 22 18:50:22 raspberrypi systemd[1]: fish-controller.service: Main process exited, code=exited, status=203/EXEC
+Jan 22 18:50:22 raspberrypi systemd[1]: fish-controller.service: Failed with result 'exit-code'.
+Jan 22 18:50:24 raspberrypi systemd[1]: fish-controller.service: Scheduled restart job, restart counter is at 48.
+Jan 22 18:50:24 raspberrypi systemd[1]: Stopped fish-controller.service - Fish Robot Controller (uv).
+Jan 22 18:50:24 raspberrypi (bin)[8674]: fish-controller.service: Failed to locate executable /usr/bin: Is a directory
+Jan 22 18:50:24 raspberrypi (bin)[8674]: fish-controller.service: Failed at step EXEC spawning /usr/bin: Is a directory
+Jan 22 18:50:24 raspberrypi systemd[1]: Started fish-controller.service - Fish Robot Controller (uv).
+Jan 22 18:50:24 raspberrypi systemd[1]: fish-controller.service: Main process exited, code=exited, status=203/EXEC
+Jan 22 18:50:24 raspberrypi systemd[1]: fish-controller.service: Failed with result 'exit-code'.
+Jan 22 18:50:27 raspberrypi systemd[1]: fish-controller.service: Scheduled restart job, restart counter is at 49.
+Jan 22 18:50:27 raspberrypi systemd[1]: Stopped fish-controller.service - Fish Robot Controller (uv).
+Jan 22 18:50:27 raspberrypi (bin)[8675]: fish-controller.service: Failed to locate executable /usr/bin: Is a directory
+Jan 22 18:50:27 raspberrypi (bin)[8675]: fish-controller.service: Failed at step EXEC spawning /usr/bin: Is a directory
+Jan 22 18:50:27 raspberrypi systemd[1]: Started fish-controller.service - Fish Robot Controller (uv).
+Jan 22 18:50:27 raspberrypi systemd[1]: fish-controller.service: Main process exited, code=exited, status=203/EXEC
+Jan 22 18:50:27 raspberrypi systemd[1]: fish-controller.service: Failed with result 'exit-code'.
+Jan 22 18:50:29 raspberrypi systemd[1]: fish-controller.service: Scheduled restart job, restart counter is at 50.
+Jan 22 18:50:29 raspberrypi systemd[1]: Stopped fish-controller.service - Fish Robot Controller (uv).
+Jan 22 18:50:29 raspberrypi (bin)[8676]: fish-controller.service: Failed to locate executable /usr/bin: Is a directory
+Jan 22 18:50:29 raspberrypi (bin)[8676]: fish-controller.service: Failed at step EXEC spawning /usr/bin: Is a directory
+Jan 22 18:50:29 raspberrypi systemd[1]: Started fish-controller.service - Fish Robot Controller (uv).
+Jan 22 18:50:29 raspberrypi systemd[1]: fish-controller.service: Main process exited, code=exited, status=203/EXEC
+Jan 22 18:50:29 raspberrypi systemd[1]: fish-controller.service: Failed with result 'exit-code'.
