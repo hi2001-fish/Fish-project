@@ -28,7 +28,7 @@ OneWire oneWire(ONE_WIRE_BUS); // Setup a oneWire instance to communicate with a
 DallasTemperature sensors(&oneWire); // Pass oneWire reference to DallasTemperature library
 
 unsigned long lastTempRead = 0;
-const unsigned long tempInterval = 10000; // 10 seconds
+const unsigned long tempInterval = 10000; // 10 seconds between temp reads
 
 //------------------------------------ SETUP ------------------------------------------
 void setup(void) {
