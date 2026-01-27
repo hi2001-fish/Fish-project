@@ -12,6 +12,7 @@ from fish.setup import setup_picture_folder
 
 PHOTO_PATH = setup_picture_folder()
 picam2 = Picamera2()
+picam2.start_preview(None)
 last_temp_read = None
 
 ser = None
