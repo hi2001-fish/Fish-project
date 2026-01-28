@@ -92,6 +92,8 @@ def take_photo(photo_folder: str = PHOTO_PATH):
     image_file = str(photo_folder / f"{current_timestamp}.jpg")
     picam2.start_and_capture_file(image_file)
 
+ascend_button = 4
+
 BUTTON_SWITCHER = {
     0: servo_slow,
     1: servo_medium,
@@ -153,14 +155,14 @@ def main():
 
                     if button_state and not was_button_held:
                         buttons_held.add(button_name)
-                        if i == ASCEND_BUTTON:
+                        if i == ascend_button:
                             send_command("ASCEND")
                         else:
                             BUTTON_SWITCHER.get(i, default_button)()
 
                     elif not button_state and was_button_held:
                         buttons_held.remove(button_name)
-                        if i == ASCEND_BUTTON:
+                        if i == ascend_button:
                             send_command("ASCEND_RELEASE")
 
 
