@@ -248,17 +248,16 @@ void loop() {
 
     else if (cmd == "ASCEND") {
     // Start timing if not already timing
-    if (!ascendPressed) {
-        ascendPressed = true;
-        ascendPressStart = millis();
+       if (!ascendPressed) {
+           ascendPressed = true;
+           ascendPressStart = millis();
     }
-
     // Normal ascend behaviour
     handleAscend();
-}
-else if (cmd == "ASCEND_RELEASE") {
+    }
+    else if (cmd == "ASCEND_RELEASE") {
     // Controller released the button
-    ascendPressed = false;
+       ascendPressed = false;
 }
 
     else if (cmd == "DESCEND") { 
