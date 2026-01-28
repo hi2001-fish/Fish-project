@@ -24,13 +24,13 @@ AccelStepper stepper(AccelStepper::DRIVER, stepPin, dirPin);
 
  
 
-const int fullIntake = 1478; //1.42L water intake  
+const int fullIntake = -839.26; // water intake  
 
-const int equilibrium = 1414; //1.36L (neutral buoyancy)  
+const int equilibrium = 292.84; // (neutral buoyancy)  
 
-const int descentStopVolume = 1258; //expel 0.15L while descending  
+const int descentStopVolume = 370.15; //expel x Litres while descending  
 
-const int ascentStopVolume = 1259; //slightly intake 0.149 L while ascending  
+const int ascentStopVolume = -215.54; //slightly intake while ascending  
 
 const int surfacePosition = 0; //Fully expel all water  
 
