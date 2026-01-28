@@ -68,11 +68,10 @@ const int servoPin = 11; //Servo is connected to pin 11 on Arduino
 
 const int centerPosition = 90;  
 
-const int amplitude = 40;        // For normal swimming  
+const int amplitude = 40; // For normal swimming  
 
-const int turnAngle = 85;        // 85 degrees off center for sharper turns  
+const int turnAngle = 85; // 85 degrees off center for sharper turns  
 
-  
 
 // Speed settings (Hz)  
 
@@ -86,7 +85,7 @@ const float speedFast = 1.5;
 
 // Current state  
 
-float currentFrequency = speedMedium;  // Start at medium speed  
+float currentFrequency = speedMedium; // Start at medium speed  
 
 bool turningLeft = false;  
 
@@ -129,38 +128,24 @@ void handleStop();
 //------------------------------------ SETUP ------------------------------------------ 
 
 void setup(void) { 
+    Serial.begin(9600); 
 
-  Serial.begin(9600); 
-
-  
-
-  // Servo 
-
-  fishTail.attach(servoPin);  
-
-  fishTail.write(centerPosition);  
-
+    // Servo 
+    fishTail.attach(servoPin);  
+    fishTail.write(centerPosition);  
  
 
-  // Temperature sensor 
+    // Temperature sensor 
+    sensors.begin(); 
 
-  sensors.begin(); 
-
- 
-
-  // Stepper 
-
-  stepper.setMaxSpeed(1000); 
-
-  stepper.setAcceleration(500); 
-
-  stepper.setCurrentPosition(0); 
-
-  currentPos = 0; 
+    // Stepper 
+    stepper.setMaxSpeed(1000); 
+    stepper.setAcceleration(500); 
+    stepper.setCurrentPosition(0); 
+    currentPos = 0; 
 
  
-
-  Serial.println("System initialised."); 
+    Serial.println("System initialised."); 
 
 } 
 
@@ -170,83 +155,54 @@ void setup(void) {
 
 void loop() { 
 
+
+// ---------------------------------- READ SERIAL COMMANDS --------------------------- 
+    if (Serial.available()) { 
+        String cmd = Serial.readStringUntil('\n'); 
+        cmd.trim();  
+
+// ---------------------------------- Servo speed commands --------------------------- 
+
+    if (cmd == "SLOW") { 
+        currentFrequency = speedSlow; 
+
+        Serial.println("Tail speed: SLOW"); 
+    } 
+
+    else if (cmd == "MEDIUM") { 
+        currentFrequency = speedMedium; 
+        Serial.println("Tail speed: MEDIUM"); 
+    } 
+
+    else if (cmd == "FAST") { 
+        currentFrequency = speedFast; 
+        Serial.println("Tail speed: FAST"); 
+     } 
  
 
-  // ---------------------------------- READ SERIAL COMMANDS --------------------------- 
-
-  if (Serial.available()) { 
-
-    String cmd = Serial.readStringUntil('\n'); 
-
-    cmd.trim(); 
-
- 
-
-    // ---------------------------------- Servo speed commands --------------------------- 
-
-    if (cmd == "SLOW") { 
-
-      currentFrequency = speedSlow; 
-
-      Serial.println("Tail speed: SLOW"); 
-
-    } 
-
-    else if (cmd == "MEDIUM") { 
-
-      currentFrequency = speedMedium; 
-
-      Serial.println("Tail speed: MEDIUM"); 
-
-    } 
-
-    else if (cmd == "FAST") { 
-
-      currentFrequency = speedFast; 
-
-      Serial.println("Tail speed: FAST"); 
-
-    } 
+// --------------------------------- Servo direction commands ------------------------ 
+    else if (cmd == "LEFT") { 
+        turningLeft = true; 
+        turningRight = false; 
+        Serial.println("Tail turning: LEFT"); 
+     } 
+    
+     else if (cmd == "RIGHT") { 
+        turningRight = true; 
+        turningLeft = false; 
+        Serial.println("Tail turning: RIGHT"); 
+    } 
+        
+    else if (cmd == "CENTER") { 
+        turningLeft = false; 
+        turningRight = false; 
+        Serial.println("Tail turning: CENTER"); 
+    } 
 
  
+// ------------------------- Stepper / ballast commands --------------------------- 
 
-    // --------------------------------- Servo direction commands ------------------------ 
-
-    else if (cmd == "LEFT") { 
-
-      turningLeft  = true; 
-
-      turningRight = false; 
-
-      Serial.println("Tail turning: LEFT"); 
-
-    } 
-
-    else if (cmd == "RIGHT") { 
-
-      turningRight = true; 
-
-      turningLeft  = false; 
-
-      Serial.println("Tail turning: RIGHT"); 
-
-    } 
-
-    else if (cmd == "CENTER") { 
-
-      turningLeft  = false; 
-
-      turningRight = false; 
-
-      Serial.println("Tail turning: CENTER"); 
-
-    } 
-
- 
-
-    // ------------------------- Stepper / ballast commands --------------------------- 
-
-    else if (cmd == "ASCEND") {
+    else if (cmd == "ASCEND") {
     // Start timing if not already timing
        if (!ascendPressed) {
            ascendPressed = true;
@@ -255,56 +211,49 @@ void loop() {
     // Normal ascend behaviour
     handleAscend();
     }
+
     else if (cmd == "ASCEND_RELEASE") {
     // Controller released the button
        ascendPressed = false;
-}
+    }
 
-    else if (cmd == "DESCEND") { 
+    else if (cmd == "DESCEND") { 
+        handleDescend(); 
+    }
 
-      handleDescend(); 
+    else if (cmd == "STOP") { 
+        handleStop(); 
+    } 
 
-    } 
+    else if (cmd == "SURFACE") { 
+        Serial.println("Command: SURFACE (move to surface position)"); 
+        moveToPosition(surfacePosition);            
+    } 
+    else if (cmd == "EQUILIBRIUM") { 
+        Serial.println("Command: EQUILIBRIUM (move to equilibrium position)"); 
+        moveToPosition(equilibrium); 
 
-    else if (cmd == "STOP") { 
+ } 
 
-      handleStop(); 
 
-    } 
+else if (cmd == "RESET") { 
 
-    else if (cmd == "SURFACE") { 
 
-      Serial.println("Command: SURFACE (move to surface position)"); 
+ Serial.println("Command: RESET (move to original position)"); 
 
-      moveToPosition(surfacePosition); 
+   moveToPosition(originalPosition); 
 
-    } 
+  } 
 
-    else if (cmd == "EQUILIBRIUM") { 
+  else { 
 
-      Serial.println("Command: EQUILIBRIUM (move to equilibrium position)"); 
+   Serial.print("Unknown command: "); 
 
-      moveToPosition(equilibrium); 
+   Serial.println(cmd); 
 
-    } 
+  } 
 
-    else if (cmd == "RESET") { 
-
-      Serial.println("Command: RESET (move to original position)"); 
-
-      moveToPosition(originalPosition); 
-
-    } 
-
-    else { 
-
-      Serial.print("Unknown command: "); 
-
-      Serial.println(cmd); 
-
-    } 
-
-  } 
+ } 
 
 if (ascendPressed) {
     if (millis() - ascendPressStart >= FAILSAFE_DURATION) {
@@ -314,25 +263,25 @@ if (ascendPressed) {
     }
 }
 
-  // ----------------------------- SERVO MOTION UPDATE -------------------------------- 
+ // ----------------------------- SERVO MOTION UPDATE -------------------------------- 
 
-  updateTailMotion(); 
-
- 
-
-  // ----------------------------- TEMPERATURE READING -------------------------------- 
-
-  updateTemperature(); 
+ updateTailMotion(); 
 
  
 
-  // Stepper is moved in blocking fashion inside moveToPosition() 
+ // ----------------------------- TEMPERATURE READING -------------------------------- 
 
-  // so nothing needed here for stepper.run() in this version. 
+ updateTemperature(); 
 
  
 
-  delay(20); // servo update rate 
+ // Stepper is moved in blocking fashion inside moveToPosition() 
+
+ // so nothing needed here for stepper.run() in this version. 
+
+ 
+
+ delay(20); // servo update rate 
 
 } 
 
@@ -344,39 +293,39 @@ if (ascendPressed) {
 
 void updateTailMotion() { 
 
-  float timeSec = millis() / 1000.0; 
+ float timeSec = millis() / 1000.0; 
 
-  float angle; 
-
- 
-
-  if (turningLeft) { 
-
-    float oscillation = (1 - cos(2 * PI * currentFrequency * timeSec)) / 2; 
-
-    angle = centerPosition - (turnAngle * oscillation); 
-
-  } 
-
-  else if (turningRight) { 
-
-    float oscillation = (1 - cos(2 * PI * currentFrequency * timeSec)) / 2; 
-
-    angle = centerPosition + (turnAngle * oscillation); 
-
-  } 
-
-  else { 
-
-    angle = centerPosition + amplitude * sin(2 * PI * currentFrequency * timeSec); 
-
-  } 
+ float angle; 
 
  
 
-  angle = constrain(angle, 20, 160); 
+ if (turningLeft) { 
 
-  fishTail.write((int)angle); 
+  float oscillation = (1 - cos(2 * PI * currentFrequency * timeSec)) / 2; 
+
+  angle = centerPosition - (turnAngle * oscillation); 
+
+ } 
+
+ else if (turningRight) { 
+
+  float oscillation = (1 - cos(2 * PI * currentFrequency * timeSec)) / 2; 
+
+  angle = centerPosition + (turnAngle * oscillation); 
+
+ } 
+
+ else { 
+
+  angle = centerPosition + amplitude * sin(2 * PI * currentFrequency * timeSec); 
+
+ } 
+
+ 
+
+ angle = constrain(angle, 20, 160); 
+
+ fishTail.write((int)angle); 
 
 } 
 
@@ -384,31 +333,31 @@ void updateTailMotion() {
 
 void updateTemperature() { 
 
-  if (millis() - lastTempRead >= tempInterval) { 
+ if (millis() - lastTempRead >= tempInterval) { 
 
-    lastTempRead = millis(); 
-
- 
-
-    sensors.requestTemperatures(); 
-
-    float tempC = sensors.getTempCByIndex(0); 
-
-    float tempF = tempC * 9.0 / 5.0 + 32.0; 
+  lastTempRead = millis(); 
 
  
 
-    Serial.print("Temperature: "); 
+  sensors.requestTemperatures(); 
 
-    Serial.print(tempC); 
+  float tempC = sensors.getTempCByIndex(0); 
 
-    Serial.print(" °C  |  "); 
+  float tempF = tempC * 9.0 / 5.0 + 32.0; 
 
-    Serial.print(tempF); 
+ 
 
-    Serial.println(" °F"); 
+  Serial.print("Temperature: "); 
 
-  } 
+  Serial.print(tempC); 
+
+  Serial.print(" °C | "); 
+
+  Serial.print(tempF); 
+
+  Serial.println(" °F"); 
+
+ } 
 
 } 
 
@@ -416,19 +365,19 @@ void updateTemperature() {
 
 void moveToPosition(int targetPosition) { 
 
-  stepper.moveTo(targetPosition); 
+ stepper.moveTo(targetPosition); 
 
-  while (stepper.distanceToGo() != 0) { 
+ while (stepper.distanceToGo() != 0) { 
 
-    stepper.run(); 
+  stepper.run(); 
 
-  } 
+ } 
 
-  currentPos = targetPosition; 
+ currentPos = targetPosition; 
 
-  Serial.print("Current position: "); 
+ Serial.print("Current position: "); 
 
-  Serial.println(currentPos); 
+ Serial.println(currentPos); 
 
 } 
 
@@ -440,17 +389,17 @@ void moveToPosition(int targetPosition) {
 
 void handleAscend() { 
 
-  isAscending = true; 
+ isAscending = true; 
 
-  Serial.println("Ascending: Moving to surface position."); 
+ Serial.println("Ascending: Moving to surface position."); 
 
-  moveToPosition(surfacePosition); 
+ moveToPosition(surfacePosition); 
 
-  delay(500); 
+ delay(500); 
 
-  Serial.println("Ascending: Returning to equilibrium position."); 
+ Serial.println("Ascending: Returning to equilibrium position."); 
 
-  moveToPosition(equilibrium); 
+ moveToPosition(equilibrium); 
 
 } 
 
@@ -458,17 +407,17 @@ void handleAscend() {
 
 void handleDescend() { 
 
-  isAscending = false; 
+ isAscending = false; 
 
-  Serial.println("Descending: Moving to full intake position."); 
+ Serial.println("Descending: Moving to full intake position."); 
 
-  moveToPosition(fullIntake); 
+ moveToPosition(fullIntake); 
 
-  delay(500); 
+ delay(500); 
 
-  Serial.println("Descending: Returning to equilibrium position."); 
+ Serial.println("Descending: Returning to equilibrium position."); 
 
-  moveToPosition(equilibrium); 
+ moveToPosition(equilibrium); 
 
 } 
 
@@ -476,33 +425,33 @@ void handleDescend() {
 
 void handleStop() { 
 
-  if (isAscending) { 
+ if (isAscending) { 
 
-    Serial.println("Stop during ascent: Adjusting to ascent stop volume."); 
+  Serial.println("Stop during ascent: Adjusting to ascent stop volume."); 
 
-    moveToPosition(ascentStopVolume); 
+  moveToPosition(ascentStopVolume); 
 
-    delay(250); 
+  delay(250); 
 
-    Serial.println("Returning to equilibrium position."); 
+  Serial.println("Returning to equilibrium position."); 
 
-    moveToPosition(equilibrium); 
+  moveToPosition(equilibrium); 
 
-    delay(250); 
+  delay(250); 
 
-  } else { 
+ } else { 
 
-    Serial.println("Stop during descent: Adjusting to descent stop volume."); 
+  Serial.println("Stop during descent: Adjusting to descent stop volume."); 
 
-    moveToPosition(descentStopVolume); 
+  moveToPosition(descentStopVolume); 
 
-    delay(500); 
+  delay(500); 
 
-    Serial.println("Returning to equilibrium position."); 
+  Serial.println("Returning to equilibrium position."); 
 
-    moveToPosition(equilibrium); 
+  moveToPosition(equilibrium); 
 
-  } 
+ } 
 
 } 
 
