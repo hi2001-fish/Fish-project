@@ -39,6 +39,15 @@ def servo_medium():
 def servo_fast():
     send_command("FAST")
 
+def ascend():
+    send_command("ASCEND")
+
+def descend():
+    send_command("DESCEND")
+
+def stop_buoyancy():
+    send_command("STOP")
+
 def button_0():
     print('button 0 pressed')
 
@@ -87,9 +96,9 @@ BUTTON_SWITCHER = {
     0: servo_slow,
     1: servo_medium,
     2: servo_fast,
-    3: button_3,
-    4: button_4,
-    5: button_5,
+    3: stop_buoyancy,
+    4: ascend,
+    5: descend,
     6: servo_left,
     7: servo_right,
     8: take_photo,
@@ -144,9 +153,17 @@ def main():
 
                     if button_state and not was_button_held:
                         buttons_held.add(button_name)
-                        BUTTON_SWITCHER.get(i, default_button)()
+                        if i == ASCEND_BUTTON:
+                            send_command("ASCEND")
+                        else:
+                            BUTTON_SWITCHER.get(i, default_button)()
+
                     elif not button_state and was_button_held:
                         buttons_held.remove(button_name)
+                        if i == ASCEND_BUTTON:
+                            send_command("ASCEND_RELEASE")
+
+
 
 
             # button_state = joystick.get_button(0)
