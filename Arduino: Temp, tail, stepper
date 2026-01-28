@@ -246,11 +246,20 @@ void loop() {
 
     // ------------------------- Stepper / ballast commands --------------------------- 
 
-    else if (cmd == "ASCEND") { 
+    else if (cmd == "ASCEND") {
+    // Start timing if not already timing
+    if (!ascendPressed) {
+        ascendPressed = true;
+        ascendPressStart = millis();
+    }
 
-      handleAscend(); 
-
-    } 
+    // Normal ascend behaviour
+    handleAscend();
+}
+else if (cmd == "ASCEND_RELEASE") {
+    // Controller released the button
+    ascendPressed = false;
+}
 
     else if (cmd == "DESCEND") { 
 
@@ -298,7 +307,13 @@ void loop() {
 
   } 
 
- 
+if (ascendPressed) {
+    if (millis() - ascendPressStart >= FAILSAFE_DURATION) {
+        Serial.println("FAILSAFE TRIGGERED: Resetting to original position.");
+        moveToPosition(originalPosition);
+        ascendPressed = false; // prevent repeated triggers
+    }
+}
 
   // ----------------------------- SERVO MOTION UPDATE -------------------------------- 
 
