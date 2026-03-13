@@ -1,257 +1,192 @@
-#include <OneWire.h>
-#include <DallasTemperature.h>
-#include <AccelStepper.h>
-#include <Servo.h>
+#!/usr/bin/env python3
 
-// ----------------------
-// OneWire / Temperature
-// ----------------------
-#define ONE_WIRE_BUS 2
-OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature sensors(&oneWire);
-const unsigned long tempInterval = 10000;
-unsigned long lastTempMillis = 0;
+#This piece of code: takes photo when 'y' button pressed; takes temp readings every 10 seconds and stores them in .csv file w time/date; prints when button pressed
+import serial
+import time
+import pygame
+import csv
+from datetime import datetime
+from picamera2 import Picamera2
+from fish.setup import setup_picture_folder
 
-// ----------------------
-// Stepper Pins
-// ----------------------
-#define dirPin 8
-#define stepPin 7
-#define homeSwitchPin 4
 
-// ----------------------
-// Servo
-// ----------------------
-#define SERVO_PIN 9
-Servo cameraServo;
+PHOTO_PATH = setup_picture_folder()
+picam2 = Picamera2()
+picam2.start_preview(None)
+last_temp_read = None
 
-int servoTarget = 90;       // default center
-int servoCurrent = 90;
-int servoSpeed = 2;         // default speed (degrees per update)
+ser = None
 
-// ----------------------
-// Stepper Setup
-// ----------------------
-AccelStepper stepper(AccelStepper::DRIVER, stepPin, dirPin);
+def send_command(cmd: str):
+    ser.write(f"{cmd}\n".encode('utf-8'))
+    print(f"Sent: {cmd}")
 
-bool isHomed = false;
-const int equilibriumPosition = -214;
+def servo_left():
+    send_command("LEFT")
 
-// ==========================================================
-// PRINT CURRENT POSITION
-// ==========================================================
-void printCurrentPosition() {
-  Serial.print("Current Position: ");
-  Serial.print(stepper.currentPosition());
-  Serial.println(" steps");
+def servo_right():
+    send_command("RIGHT")
+
+def servo_center():
+    send_command("CENTER")
+
+def servo_slow():
+    send_command("SLOW")
+
+def servo_medium():
+    send_command("MEDIUM")
+
+def servo_fast():
+    send_command("FAST")
+
+def ascend():
+    send_command("ASCEND")
+
+def descend():
+    send_command("DESCEND")
+
+def stop_buoyancy():
+    send_command("STOP")
+
+def button_0():
+    print('button 0 pressed')
+
+def button_1():
+    print('button 1 pressed')
+
+def button_2():
+    print('button 2 pressed')
+
+def button_3():
+    print('button 3 pressed')
+
+def button_4():
+    print('button 4 pressed')
+
+def button_5():
+    print('button 5 pressed')
+    
+def button_6():
+    print('button 6 pressed')
+
+def button_7():
+    print('button 7 pressed')
+
+def button_8():
+    print('button 8 pressed')
+
+def button_9():
+    print('button 9 pressed')
+
+def button_10():
+    print('button 10 pressed')
+
+def button_11():
+    print('button 11 pressed')
+
+def default_button():
+    print('default')
+
+def take_photo(photo_folder: str = PHOTO_PATH):
+    current_timestamp = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
+    image_file = str(photo_folder / f"{current_timestamp}.jpg")
+    picam2.start_and_capture_file(image_file)
+
+ascend_button = 4
+
+BUTTON_SWITCHER = {
+    0: servo_slow,
+    1: servo_medium,
+    2: servo_fast,
+    3: stop_buoyancy,
+    4: ascend,
+    5: descend,
+    6: servo_left,
+    7: servo_right,
+    8: take_photo,
+    9: servo_center,
+    10: button_10,
+    11: button_11
 }
 
-// ==========================================================
-// SETUP
-// ==========================================================
-void setup() {
-  Serial.begin(9600);
+def main():
+    global ser
 
-  // Stepper config
-  stepper.setMaxSpeed(1000);
-  stepper.setAcceleration(500);
+    # serial channel
+    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
+    ser.reset_input_buffer()
 
-  pinMode(homeSwitchPin, INPUT_PULLUP);
 
-  // Temperature
-  sensors.begin();
+    # init pygame controller
+    pygame.init()
+    pygame.joystick.init()
 
-  // Servo
-  cameraServo.attach(SERVO_PIN);
-  cameraServo.write(servoCurrent);
+    joystick = None
 
-  // Home stepper
-  homeStepper();
+    buttons_held = set()
 
-  lastTempMillis = millis();
-}
+    # look for controller already plugged in (quicker than polling connection)
+    if pygame.joystick.get_count() > 0:
+        joystick = pygame.joystick.Joystick(0)
+        joystick.init()
+        print(f"Joystick found: {joystick.get_name()}")
 
-// ==========================================================
-// MAIN LOOP
-// ==========================================================
-void loop() {
-  if (!isHomed) return;
 
-  // Stepper always runs
-  stepper.run();
+    while True:
+        # process pygame events for hot plugging
+        for event in pygame.event.get():
+            if event.type == pygame.JOYDEVICEADDED:
+                joystick = pygame.joystick.Joystick(event.device_index)
+                joystick.init()
+                print("Joystick connected")
 
-  // Smooth servo movement
-  updateServo();
+            elif event.type == pygame.JOYDEVICEREMOVED:
+                print("Joystick disconnected")
+                joystick = None
 
-  // Serial command handling
-  handleSerialCommands();
+            
 
-  // Temperature reading
-  unsigned long now = millis();
-  if (now - lastTempMillis >= tempInterval) {
-    lastTempMillis = now;
-    readAndPrintTemperature();
-  }
-}
+            # In your main loop:
+            if joystick is not None:
+                for i in range(0, 14):
+                    button_state = joystick.get_button(i)
+                    button_name = f'button_{i}'
+                    was_button_held = button_name in buttons_held
 
-// ==========================================================
-// SERIAL COMMAND HANDLER
-// ==========================================================
-void handleSerialCommands() {
-  if (!Serial.available()) return;
+                    if button_state and not was_button_held:
+                        buttons_held.add(button_name)
+                        if i == ascend_button:
+                            send_command("ASCEND")
+                        else:
+                            BUTTON_SWITCHER.get(i, default_button)()
 
-  String cmd = Serial.readStringUntil('\n');
-  cmd.trim();
+                    elif not button_state and was_button_held:
+                        buttons_held.remove(button_name)
+                        if i == ascend_button:
+                            send_command("ASCEND_RELEASE")
 
-  // ---- STEPPER COMMANDS ----
-  if (cmd == "ASCEND") {
-    ascendStepper();
-  }
-  else if (cmd == "DESCEND") {
-    descendStepper();
-  }
-  else if (cmd == "STOP") {
-    stopAfterDescend(); // or stopAfterAscend depending on your logic
-  }
 
-  // ---- SERVO POSITION COMMANDS ----
-  else if (cmd == "LEFT") {
-    servoTarget = 0;
-  }
-  else if (cmd == "CENTER") {
-    servoTarget = 90;
-  }
-  else if (cmd == "RIGHT") {
-    servoTarget = 180;
-  }
 
-  // ---- SERVO SPEED COMMANDS ----
-  else if (cmd == "SLOW") {
-    servoSpeed = 1;
-  }
-  else if (cmd == "MEDIUM") {
-    servoSpeed = 3;
-  }
-  else if (cmd == "FAST") {
-    servoSpeed = 7;
-  }
 
-  else {
-    Serial.print("Unknown command: ");
-    Serial.println(cmd);
-  }
-}
+            # button_state = joystick.get_button(0)
+            # if button_state and not is_button_held:
+            #     is_button_held = True
+            #     print("Button held, turning on")
+            #     ser.write(b"ON\n")
 
-// ==========================================================
-// SERVO SMOOTH MOVEMENT
-// ==========================================================
-void updateServo() {
-  if (servoCurrent == servoTarget) return;
+            # elif not button_state and is_button_held:
+            #     is_button_held = False
+            #     print("Button released, turning off")
+            #     ser.write(b"OFF\n")
 
-  if (servoCurrent < servoTarget) {
-    servoCurrent += servoSpeed;
-    if (servoCurrent > servoTarget) servoCurrent = servoTarget;
-  } else {
-    servoCurrent -= servoSpeed;
-    if (servoCurrent < servoTarget) servoCurrent = servoTarget;
-  }
+       
+        if ser.in_waiting > 0:
+            last_temp_read = ser.readline().decode('utf-8').rstrip()
+            f = open("tempread.csv","a")
+            f.write(datetime.now().strftime('%d/%m/%Y, %H:%M:%S')+ " " + last_temp_read + '\n')
+            print(last_temp_read)
 
-  cameraServo.write(servoCurrent);
-}
+        time.sleep(0.005)
 
-// ==========================================================
-// HOMING FUNCTION
-// ==========================================================
-void homeStepper() {
-  Serial.println("Homing stepper motor...");
-
-  stepper.setSpeed(500);
-
-  while (digitalRead(homeSwitchPin) == HIGH) {
-    stepper.runSpeed();
-  }
-
-  stepper.stop();
-  delay(100);
-
-  stepper.setCurrentPosition(0);
-  isHomed = true;
-
-  Serial.println("Homing complete.");
-  printCurrentPosition();
-}
-
-// ==========================================================
-// DESCEND FUNCTION
-// ==========================================================
-void descendStepper() {
-  Serial.println("Descending...");
-
-  stepper.moveTo(-600);
-  while (stepper.distanceToGo() != 0) stepper.run();
-
-  delay(500);
-
-  stepper.moveTo(equilibriumPosition);
-  while (stepper.distanceToGo() != 0) stepper.run();
-
-  Serial.println("Descend complete.");
-  printCurrentPosition();
-}
-
-// ==========================================================
-// ASCEND FUNCTION
-// ==========================================================
-void ascendStepper() {
-  Serial.println("Ascending...");
-
-  stepper.moveTo(0);
-  while (stepper.distanceToGo() != 0) stepper.run();
-
-  delay(500);
-
-  stepper.moveTo(equilibriumPosition);
-  while (stepper.distanceToGo() != 0) stepper.run();
-
-  Serial.println("Ascend complete.");
-  printCurrentPosition();
-}
-
-// ==========================================================
-// STOP AFTER DESCEND
-// ==========================================================
-void stopAfterDescend() {
-  Serial.println("Stop after descend...");
-
-  stepper.moveTo(100);
-  while (stepper.distanceToGo() != 0) stepper.run();
-
-  delay(500);
-
-  stepper.moveTo(equilibriumPosition);
-  while (stepper.distanceToGo() != 0) stepper.run();
-
-  Serial.println("Stop after descend complete.");
-  printCurrentPosition();
-}
-
-// ==========================================================
-// TEMPERATURE READ
-// ==========================================================
-void readAndPrintTemperature() {
-  sensors.requestTemperatures();
-  float tempC = sensors.getTempCByIndex(0);
-
-  if (tempC == DEVICE_DISCONNECTED_C) {
-    Serial.println("Temp sensor error: device disconnected.");
-    return;
-  }
-
-  float tempF = (tempC * 9.0) / 5.0 + 32.0;
-
-  Serial.print("Temperature: ");
-  Serial.print(tempC, 2);
-  Serial.print(" °C  |  ");
-  Serial.print(tempF, 2);
-  Serial.println(" °F");
-
+if __name__ == '__main__':
+    main()
