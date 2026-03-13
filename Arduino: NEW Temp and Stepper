@@ -14,12 +14,9 @@ unsigned long lastTempMillis = 0;
 // ----------------------
 // Pin Definitions
 // ----------------------
-#define dirPin 8 // pin 8 yellow
-#define stepPin 9 // pin 9 orange
+#define dirPin 8
+#define stepPin 9
 #define homeSwitchPin 4
-#define descendButtonPin 3
-#define ascendButtonPin 2
-#define stopButtonPin 6
 
 // ----------------------
 // Stepper Setup
@@ -31,22 +28,6 @@ AccelStepper stepper(AccelStepper::DRIVER, stepPin, dirPin);
 // ----------------------
 bool isHomed = false;
 const int equilibriumPosition = -214;
-
-unsigned long debounceDelay = 50;
-
-unsigned long lastDescendTime = 0;
-unsigned long lastAscendTime = 0;
-unsigned long lastStopTime = 0;
-
-bool lastDescendState = HIGH;
-bool lastAscendState = HIGH;
-bool lastStopState = HIGH;
-
-unsigned long ascendButtonPressTime = 0;
-const unsigned long longPressDuration = 3000;
-
-bool lastButtonWasDescend = false;
-bool lastButtonWasAscend = false;
 
 // ==========================================================
 // PRINT CURRENT POSITION
@@ -69,9 +50,6 @@ void setup() {
 
   // Pins
   pinMode(homeSwitchPin, INPUT_PULLUP);
-  pinMode(descendButtonPin, INPUT_PULLUP);
-  pinMode(ascendButtonPin, INPUT_PULLUP);
-  pinMode(stopButtonPin, INPUT_PULLUP);
 
   // Temperature sensor
   sensors.begin();
@@ -79,7 +57,6 @@ void setup() {
   // Home the stepper
   homeStepper();
 
-  // initial temperature read time
   lastTempMillis = millis();
 }
 
@@ -89,12 +66,33 @@ void setup() {
 void loop() {
   if (!isHomed) return;
 
-  // Handle buttons (these call blocking move routines)
-  handleDescendButton();
-  handleAscendButton();
-  handleStopButton();
+  // Always run stepper (non-blocking)
+  stepper.run();
 
-  // Periodic temperature read (non-blocking)
+  // Handle serial commands from Raspberry Pi
+  if (Serial.available()) {
+    String cmd = Serial.readStringUntil('\n');
+    cmd.trim();
+
+    if (cmd == "DESCEND") {
+      Serial.println("CMD: DESCEND");
+      descendStepper();
+    }
+    else if (cmd == "ASCEND") {
+      Serial.println("CMD: ASCEND");
+      ascendStepper();
+    }
+    else if (cmd == "STOP") {
+      Serial.println("CMD: STOP");
+      stopAfterDescend(); // or stopAfterAscend depending on your logic
+    }
+    else if (cmd == "FAILSAFE") {
+      Serial.println("CMD: FAILSAFE");
+      failSafeToZero();
+    }
+  }
+
+  // Periodic temperature read
   unsigned long now = millis();
   if (now - lastTempMillis >= tempInterval) {
     lastTempMillis = now;
@@ -108,105 +106,20 @@ void loop() {
 void homeStepper() {
   Serial.println("Homing stepper motor...");
 
-  stepper.setSpeed(500);   // move toward switch
+  stepper.setSpeed(500);
 
   while (digitalRead(homeSwitchPin) == HIGH) {
     stepper.runSpeed();
   }
 
-  // Stop immediately when switch is hit
   stepper.stop();
-  delay(100);  // small settle delay
+  delay(100);
 
-  stepper.setCurrentPosition(0);  // THIS position is zero
+  stepper.setCurrentPosition(0);
   isHomed = true;
 
   Serial.println("Homing complete.");
-  printCurrentPosition();   // should print 0
-}
-
-// ==========================================================
-// DESCEND BUTTON
-// ==========================================================
-void handleDescendButton() {
-  bool currentState = digitalRead(descendButtonPin);
-  unsigned long currentTime = millis();
-
-  if (currentState != lastDescendState &&
-      currentTime - lastDescendTime > debounceDelay) {
-
-    lastDescendTime = currentTime;
-
-    if (currentState == LOW) {
-      Serial.println("Descend pressed");
-
-      lastButtonWasDescend = true;
-      lastButtonWasAscend = false;
-
-      descendStepper();
-    }
-  }
-
-  lastDescendState = currentState;
-}
-
-// ==========================================================
-// ASCEND BUTTON
-// ==========================================================
-void handleAscendButton() {
-  bool currentState = digitalRead(ascendButtonPin);
-  unsigned long currentTime = millis();
-
-  if (currentState != lastAscendState &&
-      currentTime - lastAscendTime > debounceDelay) {
-
-    lastAscendTime = currentTime;
-
-    if (currentState == LOW) {
-      ascendButtonPressTime = currentTime;
-    }
-
-    if (currentState == HIGH) {
-      if (currentTime - ascendButtonPressTime >= longPressDuration) {
-        Serial.println("Fail-safe triggered");
-        failSafeToZero();
-      } else {
-        Serial.println("Ascend pressed");
-
-        lastButtonWasAscend = true;
-        lastButtonWasDescend = false;
-
-        ascendStepper();
-      }
-    }
-  }
-
-  lastAscendState = currentState;
-}
-
-// ==========================================================
-// STOP BUTTON
-// ==========================================================
-void handleStopButton() {
-  bool currentState = digitalRead(stopButtonPin);
-  unsigned long currentTime = millis();
-
-  if (currentState != lastStopState &&
-      currentTime - lastStopTime > debounceDelay) {
-
-    lastStopTime = currentTime;
-
-    if (currentState == LOW) {
-      if (lastButtonWasDescend) {
-        stopAfterDescend();
-      }
-      else if (lastButtonWasAscend) {
-        stopAfterAscend();
-      }
-    }
-  }
-
-  lastStopState = currentState;
+  printCurrentPosition();
 }
 
 // ==========================================================
@@ -216,16 +129,12 @@ void descendStepper() {
   Serial.println("Descending...");
 
   stepper.moveTo(-600);
-  while (stepper.distanceToGo() != 0) {
-    stepper.run();
-  }
+  while (stepper.distanceToGo() != 0) stepper.run();
 
   delay(500);
 
   stepper.moveTo(equilibriumPosition);
-  while (stepper.distanceToGo() != 0) {
-    stepper.run();
-  }
+  while (stepper.distanceToGo() != 0) stepper.run();
 
   Serial.println("Descend complete.");
   printCurrentPosition();
@@ -238,16 +147,12 @@ void ascendStepper() {
   Serial.println("Ascending...");
 
   stepper.moveTo(0);
-  while (stepper.distanceToGo() != 0) {
-    stepper.run();
-  }
+  while (stepper.distanceToGo() != 0) stepper.run();
 
   delay(500);
 
   stepper.moveTo(equilibriumPosition);
-  while (stepper.distanceToGo() != 0) {
-    stepper.run();
-  }
+  while (stepper.distanceToGo() != 0) stepper.run();
 
   Serial.println("Ascend complete.");
   printCurrentPosition();
@@ -260,9 +165,7 @@ void failSafeToZero() {
   Serial.println("Moving to zero (fail-safe)...");
 
   stepper.moveTo(0);
-  while (stepper.distanceToGo() != 0) {
-    stepper.run();
-  }
+  while (stepper.distanceToGo() != 0) stepper.run();
 
   Serial.println("Holding at zero.");
   printCurrentPosition();
@@ -275,16 +178,12 @@ void stopAfterDescend() {
   Serial.println("Stop after descend...");
 
   stepper.moveTo(100);
-  while (stepper.distanceToGo() != 0) {
-    stepper.run();
-  }
+  while (stepper.distanceToGo() != 0) stepper.run();
 
   delay(500);
 
   stepper.moveTo(equilibriumPosition);
-  while (stepper.distanceToGo() != 0) {
-    stepper.run();
-  }
+  while (stepper.distanceToGo() != 0) stepper.run();
 
   Serial.println("Stop after descend complete.");
   printCurrentPosition();
@@ -297,16 +196,12 @@ void stopAfterAscend() {
   Serial.println("Stop after ascend...");
 
   stepper.moveTo(-300);
-  while (stepper.distanceToGo() != 0) {
-    stepper.run();
-  }
+  while (stepper.distanceToGo() != 0) stepper.run();
 
   delay(500);
 
   stepper.moveTo(equilibriumPosition);
-  while (stepper.distanceToGo() != 0) {
-    stepper.run();
-  }
+  while (stepper.distanceToGo() != 0) stepper.run();
 
   Serial.println("Stop after ascend complete.");
   printCurrentPosition();
@@ -316,7 +211,7 @@ void stopAfterAscend() {
 // TEMPERATURE READ
 // ==========================================================
 void readAndPrintTemperature() {
-  sensors.requestTemperatures(); // request from all sensors
+  sensors.requestTemperatures();
   float tempC = sensors.getTempCByIndex(0);
 
   if (tempC == DEVICE_DISCONNECTED_C) {
