@@ -1,6 +1,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <AccelStepper.h>
+#include <Servo.h>
 
 // ----------------------
 // OneWire / Temperature
@@ -8,24 +9,31 @@
 #define ONE_WIRE_BUS 2
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
-const unsigned long tempInterval = 10000; // 10 seconds
+const unsigned long tempInterval = 10000;
 unsigned long lastTempMillis = 0;
 
 // ----------------------
-// Pin Definitions
+// Stepper Pins
 // ----------------------
 #define dirPin 8
-#define stepPin 9
+#define stepPin 7
 #define homeSwitchPin 4
+
+// ----------------------
+// Servo
+// ----------------------
+#define SERVO_PIN 9
+Servo cameraServo;
+
+int servoTarget = 90;       // default center
+int servoCurrent = 90;
+int servoSpeed = 2;         // default speed (degrees per update)
 
 // ----------------------
 // Stepper Setup
 // ----------------------
 AccelStepper stepper(AccelStepper::DRIVER, stepPin, dirPin);
 
-// ----------------------
-// Global Variables
-// ----------------------
 bool isHomed = false;
 const int equilibriumPosition = -214;
 
@@ -48,13 +56,16 @@ void setup() {
   stepper.setMaxSpeed(1000);
   stepper.setAcceleration(500);
 
-  // Pins
   pinMode(homeSwitchPin, INPUT_PULLUP);
 
-  // Temperature sensor
+  // Temperature
   sensors.begin();
 
-  // Home the stepper
+  // Servo
+  cameraServo.attach(SERVO_PIN);
+  cameraServo.write(servoCurrent);
+
+  // Home stepper
   homeStepper();
 
   lastTempMillis = millis();
@@ -66,38 +77,86 @@ void setup() {
 void loop() {
   if (!isHomed) return;
 
-  // Always run stepper (non-blocking)
+  // Stepper always runs
   stepper.run();
 
-  // Handle serial commands from Raspberry Pi
-  if (Serial.available()) {
-    String cmd = Serial.readStringUntil('\n');
-    cmd.trim();
+  // Smooth servo movement
+  updateServo();
 
-    if (cmd == "DESCEND") {
-      Serial.println("CMD: DESCEND");
-      descendStepper();
-    }
-    else if (cmd == "ASCEND") {
-      Serial.println("CMD: ASCEND");
-      ascendStepper();
-    }
-    else if (cmd == "STOP") {
-      Serial.println("CMD: STOP");
-      stopAfterDescend(); // or stopAfterAscend depending on your logic
-    }
-    else if (cmd == "FAILSAFE") {
-      Serial.println("CMD: FAILSAFE");
-      failSafeToZero();
-    }
-  }
+  // Serial command handling
+  handleSerialCommands();
 
-  // Periodic temperature read
+  // Temperature reading
   unsigned long now = millis();
   if (now - lastTempMillis >= tempInterval) {
     lastTempMillis = now;
     readAndPrintTemperature();
   }
+}
+
+// ==========================================================
+// SERIAL COMMAND HANDLER
+// ==========================================================
+void handleSerialCommands() {
+  if (!Serial.available()) return;
+
+  String cmd = Serial.readStringUntil('\n');
+  cmd.trim();
+
+  // ---- STEPPER COMMANDS ----
+  if (cmd == "ASCEND") {
+    ascendStepper();
+  }
+  else if (cmd == "DESCEND") {
+    descendStepper();
+  }
+  else if (cmd == "STOP") {
+    stopAfterDescend(); // or stopAfterAscend depending on your logic
+  }
+
+  // ---- SERVO POSITION COMMANDS ----
+  else if (cmd == "LEFT") {
+    servoTarget = 0;
+  }
+  else if (cmd == "CENTER") {
+    servoTarget = 90;
+  }
+  else if (cmd == "RIGHT") {
+    servoTarget = 180;
+  }
+
+  // ---- SERVO SPEED COMMANDS ----
+  else if (cmd == "SLOW") {
+    servoSpeed = 1;
+  }
+  else if (cmd == "MEDIUM") {
+    servoSpeed = 3;
+  }
+  else if (cmd == "FAST") {
+    servoSpeed = 7;
+  }
+
+  else {
+    Serial.print("Unknown command: ");
+    Serial.println(cmd);
+  }
+}
+
+// ==========================================================
+// SERVO SMOOTH MOVEMENT
+// ==========================================================
+void updateServo() {
+  if (servoCurrent == servoTarget) return;
+
+  if (servoCurrent < servoTarget) {
+    servoCurrent += servoSpeed;
+    if (servoCurrent > servoTarget) servoCurrent = servoTarget;
+  } else {
+    servoCurrent -= servoSpeed;
+    if (servoCurrent < servoTarget) servoCurrent = servoTarget;
+  }
+
+  cameraServo.write(servoCurrent);
 }
 
 // ==========================================================
@@ -159,19 +218,6 @@ void ascendStepper() {
 }
 
 // ==========================================================
-// FAIL-SAFE FUNCTION
-// ==========================================================
-void failSafeToZero() {
-  Serial.println("Moving to zero (fail-safe)...");
-
-  stepper.moveTo(0);
-  while (stepper.distanceToGo() != 0) stepper.run();
-
-  Serial.println("Holding at zero.");
-  printCurrentPosition();
-}
-
-// ==========================================================
 // STOP AFTER DESCEND
 // ==========================================================
 void stopAfterDescend() {
@@ -186,24 +232,6 @@ void stopAfterDescend() {
   while (stepper.distanceToGo() != 0) stepper.run();
 
   Serial.println("Stop after descend complete.");
-  printCurrentPosition();
-}
-
-// ==========================================================
-// STOP AFTER ASCEND
-// ==========================================================
-void stopAfterAscend() {
-  Serial.println("Stop after ascend...");
-
-  stepper.moveTo(-300);
-  while (stepper.distanceToGo() != 0) stepper.run();
-
-  delay(500);
-
-  stepper.moveTo(equilibriumPosition);
-  while (stepper.distanceToGo() != 0) stepper.run();
-
-  Serial.println("Stop after ascend complete.");
   printCurrentPosition();
 }
 
