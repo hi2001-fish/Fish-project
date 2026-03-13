@@ -37,6 +37,8 @@ AccelStepper stepper(AccelStepper::DRIVER, stepPin, dirPin);
 bool isHomed = false;
 const int equilibriumPosition = -214;
 
+String lastCmd = "";
+
 // ==========================================================
 // PRINT CURRENT POSITION
 // ==========================================================
@@ -104,6 +106,17 @@ void handleSerialCommands() {
   cmd.trim();
 
   // ---- STEPPER COMMANDS ----
+  void handleSerialCommands() {
+  if (!Serial.available()) return;
+
+  String cmd = Serial.readStringUntil('\n');
+  cmd.trim();
+
+  // Ignore duplicate commands
+  if (cmd == lastCmd) return;
+  lastCmd = cmd;
+
+  // ---- STEPPER COMMANDS ----
   if (cmd == "ASCEND") {
     ascendStepper();
   }
@@ -111,7 +124,7 @@ void handleSerialCommands() {
     descendStepper();
   }
   else if (cmd == "STOP") {
-    stopAfterDescend(); // or stopAfterAscend depending on your logic
+    stopAfterDescend();
   }
 
   // ---- SERVO POSITION COMMANDS ----
@@ -141,6 +154,7 @@ void handleSerialCommands() {
     Serial.println(cmd);
   }
 }
+
 
 // ==========================================================
 // SERVO SMOOTH MOVEMENT
