@@ -16,7 +16,7 @@ unsigned long lastTempMillis = 0;
 // Stepper Pins
 // ----------------------
 #define dirPin 8
-#define stepPin 7
+#define stepPin 7 //orange
 #define homeSwitchPin 4
 
 // ----------------------
