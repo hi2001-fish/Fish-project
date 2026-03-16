@@ -1,100 +1,123 @@
+#include <Servo.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#include <Servo.h>
 
-// ----------------------------------- SERVO SETUP ------------------------------------
-Servo fishTail; // Creating servo object 
-const int servoPin = 9; //Servo is connected to pin 9 on Arduino
 
-// Motion parameters 
+Servo fishTail;
+const int servoPin = 9;
 const int centerPosition = 90; 
-const int amplitude = 40;        // For normal swimming 
-const int turnAngle = 85;        // 85 degrees off center for sharper turns 
- 
-// Speed settings (Hz) 
+const int amplitude = 40;
+const int turnAngle = 50;
+
 const float speedSlow = 0.8; 
 const float speedMedium = 1.2; 
 const float speedFast = 1.5; 
 
-// Current state 
-float currentFrequency = speedMedium;  // Start at medium speed 
+float currentFrequency = speedMedium;
 bool turningLeft = false; 
 bool turningRight = false; 
+bool isRunning = false;
 
+// NEW: Smoothing variables
+float currentAngle = 90.0;  // Track current servo position
+float targetAngle = 90.0;   // Where we want to go
+const float smoothingFactor = 0.15;  // Lower = smoother but slower (0.1 - 0.3 range)
 
-//------------------------------------ TEMP SENSOR SETUP ------------------------------
-#define ONE_WIRE_BUS 2 // Data wire is connected to pin 2 on Arduino
-OneWire oneWire(ONE_WIRE_BUS); // Setup a oneWire instance to communicate with any OneWire device
-DallasTemperature sensors(&oneWire); // Pass oneWire reference to DallasTemperature library
+#define ONE_WIRE_BUS 2
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
 
 unsigned long lastTempRead = 0;
-const unsigned long tempInterval = 10000; // 10 seconds between temp reads
+const unsigned long tempInterval = 10000;  // 10 seconds
 
-//------------------------------------ SETUP ------------------------------------------
-void setup(void) {
+void setup() {
   Serial.begin(9600);
- 
-  // Servo
   fishTail.attach(servoPin); 
-  fishTail.write(centerPosition); 
+  fishTail.write(centerPosition);
+  currentAngle = centerPosition;  // Initialize to center
+   sensors.begin();   // Start temperature sensor
 
-  // Temperature sensor
-  sensors.begin();
   delay(1000);
 }
 
-//------------------------------------ LOOP -------------------------------------------
 void loop() {
-
- // ---------------------------------- READ SERIAL COMMANDS ---------------------------
   if (Serial.available()) {
     String cmd = Serial.readStringUntil('\n');
     cmd.trim();
-
+    
+    Serial.print("RX: ");
+    Serial.println(cmd);
+    
     if (cmd == "SLOW") {
       currentFrequency = speedSlow;
+      isRunning = true;
+      Serial.println("-> Set SLOW, running=true");
     }
     else if (cmd == "MEDIUM") {
       currentFrequency = speedMedium;
+      isRunning = true;
+      Serial.println("-> Set MEDIUM, running=true");
     }
     else if (cmd == "FAST") {
       currentFrequency = speedFast;
+      isRunning = true;
+      Serial.println("-> Set FAST, running=true");
     }
     else if (cmd == "LEFT") {
       turningLeft = true;
       turningRight = false;
+      isRunning = true;
+      Serial.println("-> Turning LEFT, running=true");
     }
     else if (cmd == "RIGHT") {
       turningRight = true;
       turningLeft = false;
+      isRunning = true;
+      Serial.println("-> Turning RIGHT, running=true");
     }
     else if (cmd == "CENTER") {
       turningLeft = false;
       turningRight = false;
+      isRunning = true;
+      Serial.println("-> CENTER, running=true");
+    }
+    else if (cmd == "STOP") {
+      isRunning = false;
+      targetAngle = centerPosition;  // Smoothly move to center
+      Serial.println("-> STOPPED, moving to center");
+    }
+    else {
+      Serial.print("-> UNKNOWN COMMAND: ");
+      Serial.println(cmd);
     }
   }
-
-  // --------------------------------- SERVO MOTION -----------------------------------
-  float time = millis() / 1000.0;
-  float angle;
-
-  if (turningLeft) {
-    float oscillation = (1 - cos(2 * PI * currentFrequency * time)) / 2;
-    angle = centerPosition - (turnAngle * oscillation);
+  
+  // Calculate target angle based on current state
+  if (isRunning) {
+    float time = millis() / 1000.0;
+    
+    if (turningLeft) {
+      float oscillation = (1 - cos(2 * PI * currentFrequency * time)) / 2;
+      targetAngle = centerPosition - (turnAngle * oscillation);
+    }
+    else if (turningRight) {
+      float oscillation = (1 - cos(2 * PI * currentFrequency * time)) / 2;
+      targetAngle = centerPosition + (turnAngle * oscillation);
+    }
+    else {
+      targetAngle = centerPosition + amplitude * sin(2 * PI * currentFrequency * time);
+    }
+    
+    targetAngle = constrain(targetAngle, 20, 160);
   }
-  else if (turningRight) {
-    float oscillation = (1 - cos(2 * PI * currentFrequency * time)) / 2;
-    angle = centerPosition + (turnAngle * oscillation);
-  }
-  else {
-    angle = centerPosition + amplitude * sin(2 * PI * currentFrequency * time);
-  }
-
-  angle = constrain(angle, 20, 160);
-  fishTail.write((int)angle);
-
-  // --------------------------------- TEMPERATURE READING (non-blocking) -------------
-  if (millis() - lastTempRead >= tempInterval) {
+  
+  // NEW: Smooth transition to target angle
+  currentAngle = currentAngle + (targetAngle - currentAngle) * smoothingFactor;
+  
+  // Move servo to smoothed angle
+  fishTail.write((int)currentAngle);
+  
+    if (millis() - lastTempRead >= tempInterval) {
     lastTempRead = millis();
 
     sensors.requestTemperatures();
@@ -103,10 +126,12 @@ void loop() {
 
     Serial.print("Temperature: ");
     Serial.print(tempC);
-    Serial.print("°C  |  ");
+    Serial.print(" C  |  ");
     Serial.print(tempF);
-    Serial.println("°F");
-  }
+    Serial.println(" F");
+    }
 
-  delay(20); // servo update rate
+
+  
+  delay(20);
 }
