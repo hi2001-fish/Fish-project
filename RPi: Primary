@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-#This piece of code: takes photo when 'y' button pressed; takes temp readings every 10 seconds and stores them in .csv file w time/date; prints when button pressed
 import serial
 import time
 import pygame
@@ -9,11 +8,9 @@ from datetime import datetime
 from picamera2 import Picamera2
 from fish.setup import setup_picture_folder
 
-
 PHOTO_PATH = setup_picture_folder()
 picam2 = Picamera2()
 picam2.start_preview(None)
-last_temp_read = None
 
 ser = None
 
@@ -21,172 +18,122 @@ def send_command(cmd: str):
     ser.write(f"{cmd}\n".encode('utf-8'))
     print(f"Sent: {cmd}")
 
-def servo_left():
-    send_command("LEFT")
-
-def servo_right():
-    send_command("RIGHT")
-
-def servo_center():
-    send_command("CENTER")
-
-def servo_slow():
-    send_command("SLOW")
-
-def servo_medium():
-    send_command("MEDIUM")
-
-def servo_fast():
-    send_command("FAST")
-
-def ascend():
-    send_command("ASCEND")
-
-def descend():
-    send_command("DESCEND")
-
-def stop_buoyancy():
-    send_command("STOP")
-
-def button_0():
-    print('button 0 pressed')
-
-def button_1():
-    print('button 1 pressed')
-
-def button_2():
-    print('button 2 pressed')
-
-def button_3():
-    print('button 3 pressed')
-
-def button_4():
-    print('button 4 pressed')
-
-def button_5():
-    print('button 5 pressed')
-    
-def button_6():
-    print('button 6 pressed')
-
-def button_7():
-    print('button 7 pressed')
-
-def button_8():
-    print('button 8 pressed')
-
-def button_9():
-    print('button 9 pressed')
-
-def button_10():
-    print('button 10 pressed')
-
-def button_11():
-    print('button 11 pressed')
-
-def default_button():
-    print('default')
-
 def take_photo(photo_folder: str = PHOTO_PATH):
     current_timestamp = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
     image_file = str(photo_folder / f"{current_timestamp}.jpg")
     picam2.start_and_capture_file(image_file)
+    print(f"Photo saved: {image_file}")
 
-ascend_button = 4
+# State tracking
+last_turn_command = None
+is_fish_moving = False
+current_speed = "SLOW"  # Default speed
+speed_cycle = ["SLOW", "MEDIUM", "FAST"]
 
-BUTTON_SWITCHER = {
-    0: servo_slow,
-    1: servo_medium,
-    2: servo_fast,
-    3: stop_buoyancy,
-    4: ascend,
-    5: descend,
-    6: servo_left,
-    7: servo_right,
-    8: take_photo,
-    9: servo_center,
-    10: button_10,
-    11: button_11
-}
+def cycle_speed():
+    """Cycle through speeds"""
+    global current_speed, is_fish_moving
+    current_index = speed_cycle.index(current_speed)
+    current_speed = speed_cycle[(current_index + 1) % 3]
+    print(f"Speed set to: {current_speed}")
+    
+    # If already swimming, update immediately
+    if is_fish_moving:
+        send_command(current_speed)
+
+def process_joystick(joystick):
+    """Process joystick"""
+    global last_turn_command, is_fish_moving
+    
+    x_axis = joystick.get_axis(0)  # Left/Right
+    y_axis = joystick.get_axis(1)  # Forward/Back
+    
+    DEADZONE = 0.2
+    
+    # STOP if pulled back
+    if y_axis > DEADZONE:
+        if is_fish_moving:
+            send_command("STOP")
+            is_fish_moving = False
+        return
+    
+    # SWIM if pushed forward
+    if y_axis < -DEADZONE:
+        if not is_fish_moving:
+            send_command(current_speed)
+            is_fish_moving = True
+    
+    # TURN left/right (only if moving)
+    if is_fish_moving:
+        if x_axis < -DEADZONE:
+            turn_command = "LEFT"
+        elif x_axis > DEADZONE:
+            turn_command = "RIGHT"
+        else:
+            turn_command = "CENTER"
+        
+        if turn_command != last_turn_command:
+            send_command(turn_command)
+            last_turn_command = turn_command
 
 def main():
     global ser
-
-    # serial channel
+    
     ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
     ser.reset_input_buffer()
-
-
-    # init pygame controller
+    
     pygame.init()
     pygame.joystick.init()
-
+    
     joystick = None
+    button_0_held = False
 
-    buttons_held = set()
-
-    # look for controller already plugged in (quicker than polling connection)
+    button_1_held = False   # Photo button
+    
     if pygame.joystick.get_count() > 0:
         joystick = pygame.joystick.Joystick(0)
         joystick.init()
-        print(f"Joystick found: {joystick.get_name()}")
-
-
+        print(f"Controller: {joystick.get_name()}")
+    
+    print("Ready! Forward=Swim | Back=Stop | L/R=Turn | Button0=Speed")
+    
     while True:
-        # process pygame events for hot plugging
         for event in pygame.event.get():
             if event.type == pygame.JOYDEVICEADDED:
                 joystick = pygame.joystick.Joystick(event.device_index)
                 joystick.init()
-                print("Joystick connected")
-
             elif event.type == pygame.JOYDEVICEREMOVED:
-                print("Joystick disconnected")
                 joystick = None
-
+        
+        if joystick is not None:
+            process_joystick(joystick)
             
+            # Button 0 for speed cycling
+            button_pressed = joystick.get_button(0)
+            if button_pressed and not button_0_held:
+                cycle_speed()
+                button_0_held = True
+            elif not button_pressed:
+                button_0_held = False
 
-            # In your main loop:
-            if joystick is not None:
-                for i in range(0, 14):
-                    button_state = joystick.get_button(i)
-                    button_name = f'button_{i}'
-                    was_button_held = button_name in buttons_held
+            # Button 1 for taking a photo
+            button1_pressed = joystick.get_button(1)
+            if button1_pressed and not button_1_held:
+                take_photo()
+                button_1_held = True
+            elif not button1_pressed:
+                button_1_held = False
 
-                    if button_state and not was_button_held:
-                        buttons_held.add(button_name)
-                        if i == ascend_button:
-                            send_command("ASCEND")
-                        else:
-                            BUTTON_SWITCHER.get(i, default_button)()
-
-                    elif not button_state and was_button_held:
-                        buttons_held.remove(button_name)
-                        if i == ascend_button:
-                            send_command("ASCEND_RELEASE")
-
-
-
-
-            # button_state = joystick.get_button(0)
-            # if button_state and not is_button_held:
-            #     is_button_held = True
-            #     print("Button held, turning on")
-            #     ser.write(b"ON\n")
-
-            # elif not button_state and is_button_held:
-            #     is_button_held = False
-            #     print("Button released, turning off")
-            #     ser.write(b"OFF\n")
-
-       
+        
+        # Read temperature
         if ser.in_waiting > 0:
-            last_temp_read = ser.readline().decode('utf-8').rstrip()
-            f = open("tempread.csv","a")
-            f.write(datetime.now().strftime('%d/%m/%Y, %H:%M:%S')+ " " + last_temp_read + '\n')
-            print(last_temp_read)
+            temp = ser.readline().decode('latin-1').rstrip()
+            with open("tempread.csv", "a") as f:
+                f.write(datetime.now().strftime('%d/%m/%Y, %H:%M:%S') + "," + temp + "\n")
+            print(temp)
 
-        time.sleep(0.005)
+        
+        time.sleep(0.05)
 
 if __name__ == '__main__':
     main()
