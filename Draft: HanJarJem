@@ -184,10 +184,15 @@ def main():
 
         # Temperature logging
         if ser.in_waiting > 0:
-            temp = ser.readline().decode('latin-1').rstrip()
-            with open("tempread.csv", "a") as f:
-                f.write(datetime.now().strftime('%d/%m/%Y, %H:%M:%S') + "," + temp + "\n")
-            print(temp)
+            line = ser.readline().decode('latin-1').rstrip()
+
+            # Only log temperature lines
+            if line.startswith("TEMP"):
+                with open("tempread.csv", "a") as f:
+                    f.write(datetime.now().strftime('%d/%m/%Y, %H:%M:%S') + "," + line + "\n")
+            print(line)
+
+
         
         time.sleep(0.05)
 
