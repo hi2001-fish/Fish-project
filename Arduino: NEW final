@@ -1,0 +1,352 @@
+#include <AccelStepper.h>
+#include <Servo.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+// ==========================================================
+// PIN DEFINITIONS
+// ==========================================================
+#define dirPin 8 //yellow
+#define stepPin 10 //orange
+#define homeSwitchPin 4
+
+#define servoPin 9
+#define ONE_WIRE_BUS 2
+
+// ==========================================================
+// STEPPER SETUP
+// ==========================================================
+AccelStepper stepper(AccelStepper::DRIVER, stepPin, dirPin);
+
+bool isHomed = false;
+const int equilibriumPosition = -214;
+
+// Non-blocking stepper state machine
+enum StepperState {
+  IDLE,
+  DESCEND_STAGE1,
+  DESCEND_WAIT,
+  DESCEND_STAGE2,
+
+  ASCEND_STAGE1,
+  ASCEND_WAIT,
+  ASCEND_STAGE2,
+
+  STOPD_STAGE1,
+  STOPD_WAIT,
+  STOPD_STAGE2,
+
+  STOPA_STAGE1,
+  STOPA_WAIT,
+  STOPA_STAGE2,
+
+  FAILSAFE_STAGE1,
+  FAILSAFE_DONE
+};
+
+StepperState stepperState = IDLE;
+unsigned long stepperTimer = 0;
+
+// ==========================================================
+// SERVO SETUP
+// ==========================================================
+Servo fishTail;
+
+const int centerPosition = 90;
+const int amplitude = 40;
+const int turnAngle = 50;
+
+const float speedSlow = 0.8;
+const float speedMedium = 1.2;
+const float speedFast = 1.5;
+
+float currentFrequency = speedMedium;
+bool turningLeft = false;
+bool turningRight = false;
+bool isRunning = false;
+
+// Smoothing
+float currentAngle = 90.0;
+float targetAngle = 90.0;
+const float smoothingFactor = 0.15;
+
+// ==========================================================
+// TEMPERATURE SENSOR
+// ==========================================================
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+
+unsigned long lastTempRead = 0;
+const unsigned long tempInterval = 10000;
+
+// ==========================================================
+// PRINT POSITION
+// ==========================================================
+void printCurrentPosition() {
+  Serial.print("Current Position: ");
+  Serial.println(stepper.currentPosition());
+}
+
+// ==========================================================
+// HOMING
+// ==========================================================
+void homeStepper() {
+  Serial.println("Homing stepper motor...");
+
+  stepper.setMaxSpeed(1000);
+  stepper.setAcceleration(500);
+  stepper.setSpeed(500);
+
+  while (digitalRead(homeSwitchPin) == HIGH) {
+    stepper.runSpeed();
+  }
+
+  stepper.stop();
+  delay(100);
+
+  stepper.setCurrentPosition(0);
+  isHomed = true;
+
+  Serial.println("Homing complete.");
+  printCurrentPosition();
+}
+
+// ==========================================================
+// START STEPPER SEQUENCES (NON-BLOCKING)
+// ==========================================================
+void startDescend() {
+  stepper.moveTo(-600);
+  stepperState = DESCEND_STAGE1;
+}
+
+void startAscend() {
+  stepper.moveTo(0);
+  stepperState = ASCEND_STAGE1;
+}
+
+void startStopAfterDescend() {
+  stepper.moveTo(100);
+  stepperState = STOPD_STAGE1;
+}
+
+void startStopAfterAscend() {
+  stepper.moveTo(-300);
+  stepperState = STOPA_STAGE1;
+}
+
+void startFailSafe() {
+  stepper.moveTo(0);
+  stepperState = FAILSAFE_STAGE1;
+}
+
+// ==========================================================
+// STEPPER STATE MACHINE UPDATE
+// ==========================================================
+void updateStepper() {
+  if (stepperState == IDLE) return;
+
+  stepper.run();
+
+  switch (stepperState) {
+
+    case DESCEND_STAGE1:
+      if (stepper.distanceToGo() == 0) {
+        stepperTimer = millis();
+        stepperState = DESCEND_WAIT;
+      }
+      break;
+
+    case DESCEND_WAIT:
+      if (millis() - stepperTimer >= 500) {
+        stepper.moveTo(equilibriumPosition);
+        stepperState = DESCEND_STAGE2;
+      }
+      break;
+
+    case DESCEND_STAGE2:
+      if (stepper.distanceToGo() == 0) {
+        stepperState = IDLE;
+        Serial.println("Descend complete.");
+        printCurrentPosition();
+      }
+      break;
+
+    case ASCEND_STAGE1:
+      if (stepper.distanceToGo() == 0) {
+        stepperTimer = millis();
+        stepperState = ASCEND_WAIT;
+      }
+      break;
+
+    case ASCEND_WAIT:
+      if (millis() - stepperTimer >= 500) {
+        stepper.moveTo(equilibriumPosition);
+        stepperState = ASCEND_STAGE2;
+      }
+      break;
+
+    case ASCEND_STAGE2:
+      if (stepper.distanceToGo() == 0) {
+        stepperState = IDLE;
+        Serial.println("Ascend complete.");
+        printCurrentPosition();
+      }
+      break;
+
+    case STOPD_STAGE1:
+      if (stepper.distanceToGo() == 0) {
+        stepperTimer = millis();
+        stepperState = STOPD_WAIT;
+      }
+      break;
+
+    case STOPD_WAIT:
+      if (millis() - stepperTimer >= 500) {
+        stepper.moveTo(equilibriumPosition);
+        stepperState = STOPD_STAGE2;
+      }
+      break;
+
+    case STOPD_STAGE2:
+      if (stepper.distanceToGo() == 0) {
+        stepperState = IDLE;
+        Serial.println("Stop after descend complete.");
+        printCurrentPosition();
+      }
+      break;
+
+    case STOPA_STAGE1:
+      if (stepper.distanceToGo() == 0) {
+        stepperTimer = millis();
+        stepperState = STOPA_WAIT;
+      }
+      break;
+
+    case STOPA_WAIT:
+      if (millis() - stepperTimer >= 500) {
+        stepper.moveTo(equilibriumPosition);
+        stepperState = STOPA_STAGE2;
+      }
+      break;
+
+    case STOPA_STAGE2:
+      if (stepper.distanceToGo() == 0) {
+        stepperState = IDLE;
+        Serial.println("Stop after ascend complete.");
+        printCurrentPosition();
+      }
+      break;
+
+    case FAILSAFE_STAGE1:
+      if (stepper.distanceToGo() == 0) {
+        stepperState = FAILSAFE_DONE;
+        Serial.println("Fail-safe complete.");
+        printCurrentPosition();
+      }
+      break;
+
+    default:
+      stepperState = IDLE;
+      break;
+  }
+}
+
+// ==========================================================
+// SETUP
+// ==========================================================
+void setup() {
+  Serial.begin(9600);
+
+  pinMode(homeSwitchPin, INPUT_PULLUP);
+
+  fishTail.attach(servoPin);
+  fishTail.write(centerPosition);
+  currentAngle = centerPosition;
+
+  sensors.begin();
+  sensors.setWaitForConversion(false);
+
+  homeStepper();
+}
+
+// ==========================================================
+// MAIN LOOP
+// ==========================================================
+void loop() {
+
+  // -----------------------------
+  // SERIAL COMMAND HANDLER
+  // -----------------------------
+  if (Serial.available()) {
+    String cmd = Serial.readStringUntil('\n');
+    cmd.trim();
+
+    Serial.print("RX: ");
+    Serial.println(cmd);
+
+    // Fish tail commands
+    if (cmd == "SLOW") { currentFrequency = speedSlow; isRunning = true; }
+    else if (cmd == "MEDIUM") { currentFrequency = speedMedium; isRunning = true; }
+    else if (cmd == "FAST") { currentFrequency = speedFast; isRunning = true; }
+    else if (cmd == "LEFT") { turningLeft = true; turningRight = false; isRunning = true; }
+    else if (cmd == "RIGHT") { turningRight = true; turningLeft = false; isRunning = true; }
+    else if (cmd == "CENTER") { turningLeft = false; turningRight = false; isRunning = true; }
+    else if (cmd == "STOP") { isRunning = false; targetAngle = centerPosition; }
+
+    // Stepper commands
+    else if (cmd == "DESCEND") startDescend();
+    else if (cmd == "ASCEND") startAscend();
+    else if (cmd == "STOP_AFTER_DESCEND") startStopAfterDescend();
+    else if (cmd == "STOP_AFTER_ASCEND") startStopAfterAscend();
+    else if (cmd == "FAILSAFE") startFailSafe();
+
+    else Serial.println("Unknown command.");
+  }
+
+  // -----------------------------
+  // UPDATE STEPPER (NON-BLOCKING)
+  // -----------------------------
+  updateStepper();
+
+  // -----------------------------
+  // UPDATE SERVO (NON-BLOCKING)
+  // -----------------------------
+  if (isRunning) {
+    float t = millis() / 1000.0;
+
+    if (turningLeft) {
+      float osc = (1 - cos(2 * PI * currentFrequency * t)) / 2;
+      targetAngle = centerPosition - (turnAngle * osc);
+    }
+    else if (turningRight) {
+      float osc = (1 - cos(2 * PI * currentFrequency * t)) / 2;
+      targetAngle = centerPosition + (turnAngle * osc);
+    }
+    else {
+      targetAngle = centerPosition + amplitude * sin(2 * PI * currentFrequency * t);
+    }
+
+    targetAngle = constrain(targetAngle, 20, 160);
+  }
+
+  currentAngle += (targetAngle - currentAngle) * smoothingFactor;
+  fishTail.write((int)currentAngle);
+
+  // -----------------------------
+  // TEMPERATURE SENSOR
+  // -----------------------------
+  if (millis() - lastTempRead >= tempInterval) {
+    lastTempRead = millis();
+    sensors.requestTemperatures();
+    float tempC = sensors.getTempCByIndex(0);
+    float tempF = tempC * 9.0 / 5.0 + 32.0;
+
+    Serial.print("TEMP,");
+    Serial.print(tempC);
+    Serial.print(",");
+    Serial.println(tempF);
+
+  }
+
+  delay(5);
+}
